@@ -1,0 +1,127 @@
+name: Auto Fix
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, master]
+
+jobs:
+  test-and-fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt || echo "No requirements.txt found"
+        pip install pytest requests google-genai
+
+    - name: Run initial tests
+      id: initial_tests
+      run: |
+        source venv/bin/activate
+        python -m pytest tests.py -v --tb=short > test_output.txt 2>&1 || echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
+        cat test_output.txt
+
+    - name: Setup AI Model Environment
+      if: steps.initial_tests.outputs.TESTS_FAILED == 'true'
+      run: |
+        echo "Tests failed, preparing AI fix environment"
+
+    - name: Fix code with AI
+      if: steps.initial_tests.outputs.TESTS_FAILED == 'true'
+      env:
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      run: |
+        source venv/bin/activate
+        python .github/scripts/ai_assist.py
+
+    - name: Run tests after fixes
+      if: steps.initial_tests.outputs.TESTS_FAILED == 'true'
+      id: fixed_tests
+      run: |
+        source venv/bin/activate
+        python -m pytest tests.py -v --tb=short > fixed_test_output.txt 2>&1 || echo "FIXED_TESTS_FAILED=true" >> $GITHUB_OUTPUT
+        cat fixed_test_output.txt
+
+    - name: Commit and push fixes
+      if: steps.initial_tests.outputs.TESTS_FAILED == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        if [[ -n $(git status --porcelain) ]]; then
+          git add .
+          git commit -m "🤖 Auto-fix: Resolve test failures with AI assistance"
+          git push origin HEAD:${{ github.head_ref }}
+          echo "CODE_FIXED=true" >> $GITHUB_OUTPUT
+        else
+          echo "No changes to commit"
+        fi
+
+    - name: Comment on PR with results
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          let comment = '## 🤖 Auto-Test and Fix Results\n\n';
+          
+          if ('${{ steps.initial_tests.outputs.TESTS_FAILED }}' === 'true') {
+            comment += '❌ **Initial tests failed**\n\n';
+            
+            if (fs.existsSync('test_output.txt')) {
+              const testOutput = fs.readFileSync('test_output.txt', 'utf8');
+              comment += '### Initial Test Output:\n```\n' + testOutput.slice(-1500) + '\n```\n\n';
+            }
+            
+            if ('${{ steps.fixed_tests.outputs.FIXED_TESTS_FAILED }}' !== 'true') {
+              comment += '✅ **Tests passed after AI fixes!**\n\n';
+              if (fs.existsSync('fixed_test_output.txt')) {
+                const fixedOutput = fs.readFileSync('fixed_test_output.txt', 'utf8');
+                comment += '### Fixed Test Output:\n```\n' + fixedOutput.slice(-1500) + '\n```\n\n';
+              }
+              comment += '🎉 The AI successfully fixed the code issues and all tests are now passing!';
+            } else {
+              comment += '⚠️ **Tests still failing after AI fix attempt**\n\nManual review may be required.';
+              if (fs.existsSync('fixed_test_output.txt')) {
+                const fixedOutput = fs.readFileSync('fixed_test_output.txt', 'utf8');
+                comment += '### Test Output After Fix Attempt:\n```\n' + fixedOutput.slice(-1500) + '\n```';
+              }
+            }
+          } else {
+            comment += '✅ **All tests passed on first run!**\n\nNo fixes were needed. Great job! 🎉';
+          }
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+    - name: Final status check
+      run: |
+        if [[ "${{ steps.initial_tests.outputs.TESTS_FAILED }}" != "true" ]] || [[ "${{ steps.fixed_tests.outputs.FIXED_TESTS_FAILED }}" != "true" ]]; then
+          echo "✅ Tests are passing!"
+          exit 0
+        else
+          echo "❌ Tests are still failing after fix attempt"
+          exit 1
+        fi
