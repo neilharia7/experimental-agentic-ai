@@ -44,7 +44,7 @@ The tests are designed to expose the intentional bugs in the calculator implemen
 The GitHub workflow in `.github/workflows/auto_fix.yml` is triggered when a pull request is opened, synchronized, or reopened. It:
 
 1. Sets up Python 3.11
-2. Installs dependencies including pytest and google-generai
+2. Installs dependencies including pytest and google-genai
 3. Runs the tests
 4. If tests fail, it runs the AI script to analyze and fix the issues
 5. Runs the tests again to verify the fixes
@@ -81,7 +81,7 @@ The workflow requires the following environment variable:
 
 - Python 3.11
 - pytest
-- google-generai
+- google-genai
 
 ## Usage
 
