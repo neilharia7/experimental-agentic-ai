@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-9.0.1, pluggy-1.6.0 -- /home/runner/work/experimental-agentic-ai/experimental-agentic-ai/venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/runner/work/experimental-agentic-ai/experimental-agentic-ai
+configfile: pyproject.toml
+plugins: anyio-4.11.0
+collecting ... collected 8 items
+
+tests.py::TestCalculator::test_addition PASSED                           [ 12%]
+tests.py::TestCalculator::test_complex_expressions PASSED                [ 25%]
+tests.py::TestCalculator::test_division PASSED                           [ 37%]
+tests.py::TestCalculator::test_multiplication PASSED                     [ 50%]
+tests.py::TestCalculator::test_order_of_operations PASSED                [ 62%]
+tests.py::TestCalculator::test_parentheses PASSED                        [ 75%]
+tests.py::TestCalculator::test_power PASSED                              [ 87%]
+tests.py::TestCalculator::test_subtraction PASSED                        [100%]
+
+============================== 8 passed in 0.01s ===============================
