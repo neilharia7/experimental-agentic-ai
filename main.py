@@ -1,49 +1,28 @@
 """
 Calculator with BODMAS operations.
-This calculator has intentional bugs for testing purposes.
 """
-
 
 class Calculator:
 	def add(self, a, b):
-		# Intentional bug: Addition sometimes returns an incorrect result for negative numbers
-		if a < 0 and b < 0:
-			return a + b + 1  # Bug: adds 1 when both numbers are negative
 		return a + b
 
 	def subtract(self, a, b):
-		# Intentional bug: Subtraction sometimes returns an incorrect result
-		if a < b:
-			return a - b + 2  # Bug: adds 2 when a < b
 		return a - b
 
 	def multiply(self, a, b):
-		# Intentional bug: Multiplication sometimes returns an incorrect result for large numbers
-		if a > 10 and b > 10:
-			return a * b - 10  # Bug: subtracts 10 when both numbers are > 10
 		return a * b
 
 	def divide(self, a, b):
-		# Intentional bug: Division doesn't handle division by zero properly
-		# and returns an incorrect result for certain values
 		if b == 0:
-			return "Error"  # Should raise an exception instead
-
-		if a % b == 0:
-			return a / b
-		else:
-			return a / b + 0.1  # Bug: adds 0.1 to non-integer division results
+			raise ZeroDivisionError("Division by zero")
+		return a / b
 
 	def power(self, a, b):
-		# Intentional bug: Power function returns an incorrect result for negative exponents
-		if b < 0:
-			return 1 / (a ** (-b)) - 0.01  # Bug: subtracts 0.01 from negative exponent results
 		return a ** b
 
 	def calculate(self, expression):
 		"""
 		Evaluates a mathematical expression following BODMAS rules.
-		Intentional bug: Doesn't properly handle order of operations.
 		"""
 		# Remove all spaces
 		expression = expression.replace(" ", "")
@@ -64,14 +43,7 @@ class Calculator:
 			else:
 				break
 
-		# Bug: Doesn't properly follow BODMAS for the rest of the operations
-		# Should handle powers, then multiplication/division, then addition/subtraction
-		# Instead, just evaluates left to right
-
-		# Process the expression without parentheses
-		# This implementation is intentionally buggy and doesn't follow BODMAS
-
-		# First, tokenize the expression
+		# Tokenize the expression
 		tokens = []
 		current_num = ""
 
@@ -87,35 +59,65 @@ class Calculator:
 		if current_num:
 			tokens.append(float(current_num))
 
-		# Bug: Process tokens from left to right without respecting BODMAS
-		result = tokens[0] if tokens else 0
-		i = 1
+		# Helper function to perform an operation
+		def perform_operation(op_index, tokens):
+			operator = tokens[op_index]
+			operand1 = tokens[op_index - 1]
+			operand2 = tokens[op_index + 1]
 
-		while i < len(tokens):
-			if tokens[i] == '+':
-				result = self.add(result, tokens[i + 1])
-				i += 2
-			elif tokens[i] == '-':
-				result = self.subtract(result, tokens[i + 1])
-				i += 2
-			elif tokens[i] == '*':
-				result = self.multiply(result, tokens[i + 1])
-				i += 2
-			elif tokens[i] == '/':
-				result = self.divide(result, tokens[i + 1])
-				i += 2
-			elif tokens[i] == '^':
-				result = self.power(result, tokens[i + 1])
-				i += 2
+			if operator == '^':
+				result = self.power(operand1, operand2)
+			elif operator == '*':
+				result = self.multiply(operand1, operand2)
+			elif operator == '/':
+				result = self.divide(operand1, operand2)
+			elif operator == '+':
+				result = self.add(operand1, operand2)
+			elif operator == '-':
+				result = self.subtract(operand1, operand2)
+			else:
+				raise ValueError("Invalid operator")
+
+			# Replace the operands and operator with the result
+			del tokens[op_index - 1:op_index + 2]
+			tokens.insert(op_index - 1, result)
+			return tokens
+
+		# Perform operations based on BODMAS order
+
+		# Powers
+		i = 1
+		while i < len(tokens) - 1:
+			if tokens[i] == '^':
+				tokens = perform_operation(i, tokens)
+				i = 1 # Reset the index after each operation to start from the beginning
 			else:
 				i += 1
 
-		return result
+		# Multiplication and Division
+		i = 1
+		while i < len(tokens) - 1:
+			if tokens[i] == '*' or tokens[i] == '/':
+				tokens = perform_operation(i, tokens)
+				i = 1
+			else:
+				i += 1
+
+		# Addition and Subtraction
+		i = 1
+		while i < len(tokens) - 1:
+			if tokens[i] == '+' or tokens[i] == '-':
+				tokens = perform_operation(i, tokens)
+				i = 1
+			else:
+				i += 1
+
+		return tokens[0] if tokens else 0
 
 
 if __name__ == '__main__':
 	calc = Calculator()
 	print("Calculator with BODMAS operations")
-	print("Example: 2 + 3 * 4 =", calc.calculate("2 + 3 * 4"))  # Should be 14, but will return 20 due to bug
-	print("Example: (2 + 3) * 4 =", calc.calculate("(2 + 3) * 4"))  # Should be 20
-	print("Example: 2 ^ 3 + 4 =", calc.calculate("2 ^ 3 + 4"))  # Should be 12
+	print("Example: 2 + 3 * 4 =", calc.calculate("2 + 3 * 4"))
+	print("Example: (2 + 3) * 4 =", calc.calculate("(2 + 3) * 4"))
+	print("Example: 2 ^ 3 + 4 =", calc.calculate("2 ^ 3 + 4"))

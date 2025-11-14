@@ -1,0 +1,55 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-9.0.1, pluggy-1.6.0 -- /home/runner/work/experimental-agentic-ai/experimental-agentic-ai/venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/runner/work/experimental-agentic-ai/experimental-agentic-ai
+configfile: pyproject.toml
+plugins: anyio-4.11.0
+collecting ... collected 8 items
+
+tests.py::TestCalculator::test_addition FAILED                           [ 12%]
+tests.py::TestCalculator::test_complex_expressions FAILED                [ 25%]
+tests.py::TestCalculator::test_division FAILED                           [ 37%]
+tests.py::TestCalculator::test_multiplication FAILED                     [ 50%]
+tests.py::TestCalculator::test_order_of_operations FAILED                [ 62%]
+tests.py::TestCalculator::test_parentheses PASSED                        [ 75%]
+tests.py::TestCalculator::test_power FAILED                              [ 87%]
+tests.py::TestCalculator::test_subtraction FAILED                        [100%]
+
+=================================== FAILURES ===================================
+_________________________ TestCalculator.test_addition _________________________
+tests.py:22: in test_addition
+    self.assertEqual(self.calc.add(-2, -3), -5)
+E   AssertionError: -4 != -5
+___________________ TestCalculator.test_complex_expressions ____________________
+tests.py:88: in test_complex_expressions
+    self.assertEqual(self.calc.calculate("2 * (3 + 4 * 5)"), 46)
+E   AssertionError: 70.0 != 46
+_________________________ TestCalculator.test_division _________________________
+tests.py:46: in test_division
+    self.assertEqual(self.calc.divide(5, 2), 2.5)
+E   AssertionError: 2.6 != 2.5
+______________________ TestCalculator.test_multiplication ______________________
+tests.py:38: in test_multiplication
+    self.assertEqual(self.calc.multiply(11, 11), 121)
+E   AssertionError: 111 != 121
+___________________ TestCalculator.test_order_of_operations ____________________
+tests.py:78: in test_order_of_operations
+    self.assertEqual(self.calc.calculate("2 + 3 * 4"), 14)
+E   AssertionError: 20.0 != 14
+__________________________ TestCalculator.test_power ___________________________
+tests.py:58: in test_power
+    self.assertEqual(self.calc.power(2, -1), 0.5)
+E   AssertionError: 0.49 != 0.5
+_______________________ TestCalculator.test_subtraction ________________________
+tests.py:30: in test_subtraction
+    self.assertEqual(self.calc.subtract(3, 5), -2)
+E   AssertionError: 0 != -2
+=========================== short test summary info ============================
+FAILED tests.py::TestCalculator::test_addition - AssertionError: -4 != -5
+FAILED tests.py::TestCalculator::test_complex_expressions - AssertionError: 70.0 != 46
+FAILED tests.py::TestCalculator::test_division - AssertionError: 2.6 != 2.5
+FAILED tests.py::TestCalculator::test_multiplication - AssertionError: 111 != 121
+FAILED tests.py::TestCalculator::test_order_of_operations - AssertionError: 20.0 != 14
+FAILED tests.py::TestCalculator::test_power - AssertionError: 0.49 != 0.5
+FAILED tests.py::TestCalculator::test_subtraction - AssertionError: 0 != -2
+========================= 7 failed, 1 passed in 0.04s ==========================
