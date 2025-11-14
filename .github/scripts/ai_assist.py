@@ -7,10 +7,9 @@ This script analyzes test failures and uses Google's Generative AI to suggest an
 import os
 import sys
 import subprocess
-import json
 import re
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Tuple
 
 try:
 	from google import genai
@@ -40,6 +39,15 @@ class AICodeFixer:
 	def get_test_output(self) -> str:
 		"""Read the test output file."""
 		try:
+			command = "python -m pytest tests.py -v --tb=short > test_output.txt 2>&1"
+			command = command.split()
+			_ = subprocess.run(
+				command,
+				capture_output=True,
+				text=True,
+				check=False,
+			)
+
 			with open('test_output.txt', 'r') as f:
 				return f.read()
 		except FileNotFoundError:
@@ -79,16 +87,30 @@ class AICodeFixer:
 		failures = []
 
 		# Extract failure information using regex
-		failure_pattern = r"FAIL: (test_\w+) \(([\w\.]+)\)"
-		error_pattern = r"AssertionError: (.*)"
+		# Pattern matches: tests.py::TestCalculator::test_addition FAILED
+		failure_pattern = r"tests\.py::([\w]+)::(test_\w+) FAILED"
 
-		for match in re.finditer(failure_pattern, test_output):
-			test_name = match.group(1)
-			test_class = match.group(2)
+		# Pattern matches the assertion errors
+		# Example: E   AssertionError: -4 != -5
+		error_pattern = r"E\s+AssertionError:\s*(.+?)(?=\n[_=]|\n\w+\.py:|\Z)"
 
-			# Find the corresponding error message
-			error_match = re.search(error_pattern, test_output[match.end():])
-			error_message = error_match.group(1) if error_match else "Unknown error"
+		failure_matches = list(re.finditer(failure_pattern, test_output))
+
+		for match in failure_matches:
+			test_class = match.group(1)
+			test_name = match.group(2)
+
+			# Find the corresponding error message in the FAILURES section
+			# Look for the specific test failure section
+			test_section_pattern = rf"_{{{20,}}} {test_class}\.{test_name} _{{{20,}}}(.*?)(?=_{{{20,}}}|={{{20,}}})"
+			section_match = re.search(test_section_pattern, test_output, re.DOTALL)
+
+			error_message = "Unknown error"
+			if section_match:
+				section_content = section_match.group(1)
+				error_match = re.search(error_pattern, section_content, re.DOTALL)
+				if error_match:
+					error_message = error_match.group(1).strip()
 
 			failures.append({
 				"test_name": test_name,
